@@ -1,0 +1,57 @@
+// Atividade CDN Banco de dados, Ana Elisa Rubinato
+
+use("Cdn_atividade");
+// Resposta 2
+//.find({} filtro,{} seleção (projeção)) 
+console.log (db.Restaurante.find({}) );
+
+// Resposta 3: Contar todos os documentos
+console.log (db.Restaurante.countDocuments({}));
+
+// Resposta 4: Retornar nome, bairro e excluir _id
+console.log (db.Restaurante.find(
+    {}, // Filtro: vazio para selecionar todos os documentos
+    { name: 1, borough: 1, _id: 0 } // Projeção: mostrar nome e bairro, esconder _id
+));
+
+// Resposta 5: Retornar nome e bairro dos restaurantes no Bronx, sem o _id
+console.log (db.Restaurante.find(
+    { borough: {$eq:"Bronx"} }, // Filtro: apenas documentos onde o bairro é "Bronx"
+    { name: 1, borough: 1, _id: 0 } // Projeção
+));
+
+// Resposta 6: Encontrar restaurantes com nota (grade) maior que 5
+console.log (db.Restaurante.find(
+    { "grades.score": { $gt: 5 } } // Filtro: acessa o campo 'grade' dentro do array 'grades' e busca por valores maiores que 5
+));
+
+// Resposta 7: Retornar a cozinha dos restaurantes que não são 'American'
+console.log (db.Restaurante.find(
+    { cuisine: { $ne: "American " } }, // Filtro: cozinha diferente de "American"
+    { cuisine: 1, _id: 0 } // Projeção: mostrar apenas a cozinha
+));
+// Resposta 8: Encontrar restaurantes com "Pizza" no nome
+console.log (db.Restaurante.find(
+    { name: { $regex: /Pizza/, $options: "i" } }, // Filtro: busca "Pizza" no nome. A opção "i" ignora maiúsculas/minúsculas.
+    { name: 1, _id: 0 } // Projeção: mostrar apenas o nome
+));
+
+//Resposta 9: Encontrar restaurantes com "Pizza" no nome no bairro Brooklyn
+console.log (db.Restaurante.find(
+    {
+        name: { $regex: /Pizza/, $options: "i" },
+        borough: "Brooklyn"
+    },
+    { name: 1, borough:1, _id: 0 } // Projeção
+));
+
+// Resposta 10: Excluir restaurantes com nota (grade) inferior a 5
+console.log (db.Restaurante.deleteMany(
+    { "grades.score": { $lt: 5 } } // Filtro: nota menor que 5
+));
+
+// Resposta 11: Contar os documentos restantes
+console.log (db.Restaurante.countDocuments({}));
+
+// Resposta 12: Excluir a coleção inteira
+console.log (db.Restaurante.drop());

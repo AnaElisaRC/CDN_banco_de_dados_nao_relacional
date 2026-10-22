@@ -1,0 +1,380 @@
+// Atividade CDN Banco de dados
+//  Ana Elisa Rubinato
+// Pipeline Agregação
+// 1° Passo
+//  Crie um bando de dados com o nome biblioteca
+use('biblioteca')
+
+// 2º passo:
+//  Crie a coleção livros, importe os documentos que se encontra no arquivo livros.json   
+db.createCollection("livros");
+
+// 3º passo: Exibe apenas livros da categoria “Fantasia”
+db.livros.aggregate([
+  {
+    $match: {
+      "categoria": "Fantasia"
+    }
+  }
+])
+
+// 4º passo:  Projete o campo titulo, e  um campo Total, para  descrever a formula de preço e quantidade dos livros
+db.livros.aggregate([
+  {
+    $project: {
+      "_id": 0,
+      "titulo": 1,
+      "total_vendas": { $multiply: ["$preco", "$quantidade_vendida"] }
+    }
+  },
+])
+
+//5º passo: Demonstre o Agrupamento $group, por categoria, exibindo o valor total por categoria em ordem decrescente. 
+db.livros.aggregate([
+  {
+    $group: {
+      _id: "$categoria",
+      total_categoria:
+        { $sum: { $multiply: ["$preco", "$quantidade_vendida"] } }
+    }
+  },
+  {
+    $sort: { total_categoria: -1 }
+  }
+])
+
+//6º passo: Demonstre o Agrupamento $group, por categoria com a média especifica  ordenando em decrescente.
+db.livros.aggregate([
+  {
+    $group: {
+      _id: "$categoria",
+      media_preco: { $avg: "$preco" }
+    }
+  },
+  {
+    $sort: {
+      media_preco: -1
+    }
+  }
+])
+
+//7º passo:Projete os campos Titulo, quantidade dos 5 (cinco) livros mais vendidos. 
+db.livros.aggregate([
+  {
+    $project: {
+      "_id": 0,
+      "titulo": 1,
+      "quantidade_vendida": 1
+    }
+  },
+  {
+    $sort: {
+      "quantidade_vendida": -1
+    }
+  },
+  { $limit: 5 }
+])
+
+//8º passo:Exiba o Autor que mais houve vendas. 
+db.livros.aggregate([
+  {
+    $project: {
+      "_id": 0,
+      "autor": 1,
+    }
+  },
+  {
+    $sort: {
+      "quantidade_vendida": -1
+    }
+  },
+  { $limit: 1 }
+])
+
+//9º passo: Projete os livros publicados após 2000 e com mais de 2000 vendas.
+db.livros.aggregate([
+  {
+    $match: {
+      ano_publicacao: { $gt: 2000 },
+      quantidade_vendida: { $gt: 2000 }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      titulo: 1,
+      ano_publicacao: 1,
+      quantidade_vendida: 1
+    }
+  }
+])
+
+
+// Operadores de Atualização.
+
+
+// 1º passo: Criar um banco de dados Pessoa.
+use('pessoa');
+
+// // 2º passo: Inserira os documentos na coleção Usuário.
+db.usuario.insertMany([
+  { _id: 1, nome: "João", idade: 25, pontos: 50, ativo: false, interesses: ["esporte", "música"] },
+  { _id: 2, nome: "Ana", idade: 30, pontos: 80, ativo: true, interesses: ["leitura", "cinema"] },
+  { _id: 3, nome: "Carlos", idade: 22, pontos: 40, ativo: false, interesses: ["games"] },
+  { _id: 4, nome: "Beatriz", idade: 27, pontos: 90, ativo: true, interesses: ["arte", "viagem"] },
+  { _id: 5, nome: "Diego", idade: 35, pontos: 60, ativo: false, interesses: ["carros", "música"] },
+  { _id: 6, nome: "Fernanda", idade: 29, pontos: 100, ativo: true, interesses: ["moda"] },
+  { _id: 7, nome: "Gustavo", idade: 24, pontos: 70, ativo: false, interesses: ["futebol"] },
+  { _id: 8, nome: "Helena", idade: 32, pontos: 55, ativo: true, interesses: ["fotografia", "cozinha"] },
+  { _id: 9, nome: "Igor", idade: 28, pontos: 45, ativo: false, interesses: ["filmes"] },
+  { _id: 10, nome: "Julia", idade: 26, pontos: 95, ativo: true, interesses: ["dança", "arte"] }
+]);
+
+// // 3º passo: Atualize o usuário “João” , ativo para true. 
+use('pessoa');
+
+db.usuario.updateOne(
+  { nome: "João" },
+  { $set: { ativo: true } }
+);
+
+db.usuario.find({ nome: "João" })
+
+// // 4º passo: Acrescente 10 pontos ao campo pontos  da usuária “Beatriz”
+db.usuario.updateOne(
+  { nome: "Beatriz" },
+  { $inc: { pontos: 10 } }
+);
+
+db.usuario.find({ nome: "Beatriz" })
+
+// // 5º passo Remova o campo  idade  do usuário “Diego” 
+db.usuario.updateOne(
+  { nome: "Diego" },
+  { $unset: { idade: "" } }
+);
+
+db.usuario.findOne({ nome: "Diego" })
+
+// // 6º passo: Renomeie o campo pontos para pontuação em todos os documentos.
+db.usuario.updateMany(
+  {},
+  { $rename: { "pontos": "pontuacao" } }
+);
+
+db.usuario.find();
+
+// // 7º passo: Adicionar o valor “viagem” no campo interesses da usuária “Fernanda”
+db.usuario.updateOne(
+  { nome: "Fernanda" },
+  { $addToSet: { interesses: "viagem" } }
+);
+
+db.usuario.findOne({ nome: "Fernanda" })
+
+// // 8º passo: Atualize o campo pontuação  somente se os valores for maior 100 
+db.usuario.updateMany(
+  { pontuacao: { $gt: 100 } },
+  { $set: { pontuacao: 150 } }
+);
+
+db.usuario.find();
+
+// // 9º passo: Atualize somente a idade que for menor que 20 
+db.usuario.updateMany(
+  { idade: { $lt: 20 } },
+  { $set: { idade: 25 } }
+);
+
+db.usuario.find();
+
+
+// // 10 º passo: Adicione nos documentos o campo “atualizaEm”, com a data/hora atual.
+db.usuario.updateMany(
+  {},
+  { $set: { atualizaEm: new Date() } }
+);
+
+db.usuario.find();
+
+// Validação de Esquema 
+
+//1- Crie uma coleção filmes com os seguintes campos obrigatórios, classifique em o BSON  adequado:
+//• Título. 
+//• Ano.
+//• Gênero.
+use('locadora');
+
+db.createCollection("filmes", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["Título", "Ano", "Gênero"],
+      properties: {
+        Título: {
+          bsonType: "string",
+          description: "deve ser uma string e é obrigatório"
+        },
+        Ano: {
+          bsonType: "int",
+          description: "deve ser um inteiro e é obrigatório"
+        },
+        Gênero: {
+          bsonType: "string",
+          description: "deve ser uma string e é obrigatório"
+        }
+      }
+    }
+  }
+})
+// Demonstre documento valido
+db.filmes.insertOne({
+  Título: "Matrix",
+  Ano: 1999,
+  Gênero: "Ficção Científica"
+})
+
+
+db.filmes.find();
+// Demonstre documento invalido
+console.log(
+  db.filmes.insertOne({
+    Título: "Clube da Luta",
+    Gênero: "Drama"
+    // ERRO: Faltando o campo obrigatório "Ano"
+  }))
+
+db.filmes.find();
+
+//2 - Crie uma coleção filmes com os seguintes campos obrigatórios e opcionais.
+// Campos obrigatório. • Título. • Ano. • Gênero. • Diretor. • Elenco. • Classificação:  [ “livre”, “10”, “12”, “14”, “16”, “18” ].
+//Campos opcional  • Duração. • Nota de 0 a 10. • Comentário.
+// (Opcional) Remove a coleção anterior para aplicar novas regras
+use('locadora');
+db.filmes.drop()
+
+// 2 - Crie uma coleção filmes com os seguintes campos obrigatórios e opcionais
+use('locadora');
+db.createCollection("filmes", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      // Lista de campos obrigatórios
+      required: ["Título", "Ano", "Gênero", "Diretor", "Elenco", "Classificação"],
+
+      // Definição de TODAS as propriedades (obrigatórias e opcionais)
+      properties: {
+
+        // --- Campos Obrigatórios ---
+        Título: {
+          bsonType: "string"
+        },
+        Ano: {
+          bsonType: "int"
+        },
+        Gênero: {
+          bsonType: "string"
+        },
+        Diretor: {
+          bsonType: "string"
+        },
+        Elenco: {
+          bsonType: "array",
+          items: {
+            bsonType: "string"
+          }
+        },
+        // 'Classificação' é um "irmão" do Elenco, não um "filho"
+        Classificação: {
+          bsonType: "string",
+          enum: ["livre", "10", "12", "14", "16", "18"]
+        },
+
+        // --- Campos Opcionais ---
+        // (Estes também são "irmãos" no mesmo nível)
+        Duração: {
+          bsonType: "int",
+          minimum: 1
+        },
+        Nota: {
+          bsonType: "double",
+          minimum: 0,
+          maximum: 10
+        },
+        Comentário: {
+          bsonType: "string"
+        }
+      } // Fim do 'properties'
+    }
+  }
+})
+
+// Exemplo Valido
+db.filmes.insertOne({
+  Título: "Interestelar",
+  Ano: 2014,
+  Gênero: "Ficção Científica",
+  Diretor: "Christopher Nolan",
+  Elenco: ["Matthew McConaughey", "Anne Hathaway", "Jessica Chastain"],
+  Classificação: "10",
+  Duração: 169,
+  Nota: 9.2,
+  Comentário: "Ótimo filme!"
+})
+
+// Exemplo Invalido
+console.log(
+  db.filmes.insertOne({
+    Título: "Batman: O Cavaleiro das Trevas",
+    Ano: 2008,
+    Gênero: "Ação",
+    Elenco: ["Christian Bale", "Heath Ledger"],
+    Classificação: "maiores de 13",
+    Nota: 11
+  }))
+
+//Questões
+
+// 1- Explique o que são índices no MongoDB e qual é a sua importância para o desempenho das consultas em grandes volumes de dados.
+// Um índice no MongoDB é uma estrutura de dados especial que armazena os valores de um campo (ou campos) específico em uma ordem otimizada. Esse índice contém "ponteiros" (referências) para a localização exata dos documentos completos no disco.
+//Sem um índice, quando você faz uma consulta (ex: db.usuarios.find({ email: "ana@email.com" })), o MongoDB é forçado a fazer um "Collection Scan" (Varredura da Coleção). Isso significa que ele deve inspecionar todos os documentos da sua coleção, um por um, para ver quais deles correspondem ao filtro.
+//Em 1.000 documentos: Isso é rápido.
+//Em 50.000.000 de documentos: Isso é um desastre de performance, podendo levar minutos ou até horas, consumindo muita CPU e disco.
+//Com um índice no campo email, o MongoDB usa o índice (como o índice do livro) para encontrar o email "ana@email.com" quase instantaneamente, pega o ponteiro e busca apenas aquele documento, ignorando os outros 49.999.999.
+//Em suma, índices transformam operações de leitura lentas (que varrem tudo) em operações extremamente rápidas (que vão direto ao ponto).
+
+// 2 - Descreva três tipos de índices suportados pelo MongoDB (por exemplo, simples, compostos, de texto, geoespaciais, etc.) e explique em quais cenários cada tipo é mais indicado.
+// a) Índice Simples (Single Field Index)
+// Este é o tipo mais básico. Ele cria uma referência ordenada para um único campo do documento. (O índice _id que o MongoDB cria automaticamente é um exemplo de índice simples).
+// Exemplo de Criação:
+// db.usuarios.createIndex({ email: 1 }) // O '1' indica ordem crescente
+// Cenário Indicado: Perfeito para quando você faz consultas ou ordenações frequentes usando um campo específico. É ideal para campos como email, cpf, username, ou qualquer identificador que você usa muito para filtrar.
+// b) Índice Composto (Compound Index)
+// Um índice composto cria uma referência ordenada para múltiplos campos em uma ordem específica. A ordem em que você define os campos no índice é crucial.
+// Exemplo de Criação:
+// // Índice para filtrar por 'categoria' (crescente) e ordenar por 'preco' (decrescente)
+// db.produtos.createIndex({ categoria: 1, preco: -1 })
+// Cenário Indicado: Ideal para consultas que filtram por múltiplos campos ao mesmo tempo, ou que filtram por um campo e ordenam por outro. O índice acima otimizaria perfeitamente a consulta: db.produtos.find({ categoria: "Eletrônicos" }).sort({ preco: -1 }). Ele também pode ser usado para consultas que usam apenas o primeiro campo (o prefixo), como db.produtos.find({ categoria: "Eletrônicos" }).
+// c) Índice de Texto (Text Index)
+// Este é um índice especial projetado para pesquisa de texto (Full-Text Search). Ele não armazena apenas o valor, mas "entende" o conteúdo do texto: ele quebra o texto em palavras individuais (tokens), remove palavras comuns (stop-words como "o", "a", "de") e armazena as raízes das palavras (stemming).
+// Exemplo de Criação:
+// // Permite a busca de texto nos campos 'titulo' e 'descricao'
+// db.artigos.createIndex({ titulo: "text", descricao: "text" })
+// Cenário Indicado: Usado exclusivamente quando você precisa implementar uma funcionalidade de busca, como uma barra de pesquisa no seu site. Ele permite o uso do operador $text.
+// Exemplo de consulta: db.artigos.find({ $text: { $search: "banco de dados" } })
+// Isso encontraria artigos que contenham "banco" ou "dados" (ou ambos) em qualquer lugar do titulo ou da descricao.
+
+
+// 3 - Embora os índices melhorem o desempenho de leitura, eles também podem ter impactos negativos em determinadas operações. Explique quais são esses impactos e como o uso excessivo de índices pode afetar o armazenamento .
+// Índices são ótimos para leitura (find), mas eles têm um custo que é pago nas operações de escrita (insert, update, delete) e no armazenamento.
+// a) Impacto nas Operações de Escrit
+// Cada vez que você modifica um dado, o MongoDB precisa fazer duas coisas: modificar o documento e atualizar todos os índices relacionados.
+// INSERT (Inserção): Quando você adiciona um novo documento, o MongoDB precisa adicionar uma nova entrada para esse documento em cada índice da coleção.
+// UPDATE (Atualização): Se você atualiza um campo que está indexado (ex: muda o email de um usuário), o MongoDB precisa atualizar o documento e também reordenar o índice email, o que é uma operação mais custosa.
+// DELETE (Remoção): Ao apagar um documento, o MongoDB precisa removê-lo da coleção e também remover suas referências de todos os índices.
+// Conclusão: Quanto mais índices você tiver, mais lentas serão suas operações de escrita. Em coleções que recebem muitas escritas (como logs ou dados de sensores), o excesso de índices é um grande problema.
+// b) Impacto no Armazenamento (Disco e RAM)
+// Índices não são de graça. Eles são estruturas de dados que ocupam espaço.
+// Espaço em Disco: Um índice é um arquivo armazenado em disco. Índices grandes, especialmente em campos com textos longos ou em arrays, podem ocupar muito espaço, às vezes sendo até maiores que os próprios dados.
+// Espaço em RAM: Para que um índice seja rápido, o MongoDB tenta mantê-lo na memória RAM. Se você tiver muitos índices (ou índices muito grandes), eles consumirão uma grande quantidade de RAM. Se os índices não couberem na RAM, o banco precisará ficar lendo o índice do disco, o que anula grande parte do ganho de performance.
+// O uso excessivo de índices ("over-indexing") é um erro comum que leva a escritas lentas e alto consumo de disco e RAM, prejudicando o desempenho geral do banco. O ideal é criar índices apenas para as consultas que você realmente precisa otimizar.
